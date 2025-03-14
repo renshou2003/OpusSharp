@@ -46,7 +46,11 @@ namespace OpusSharp.Core
         /// <returns>The length of the encoded packet (in bytes).</returns>
         /// <exception cref="OpusException" />
         /// <exception cref="ObjectDisposedException" />
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Encode(byte[] input, int frame_size, byte[] output, int max_data_bytes)
+#else
         public unsafe int Encode(Span<byte> input, int frame_size, Span<byte> output, int max_data_bytes)
+#endif
         {
             ThrowIfDisposed();
             fixed (byte* inputPtr = input)
@@ -68,7 +72,11 @@ namespace OpusSharp.Core
         /// <returns>The length of the encoded packet (in bytes).</returns>
         /// <exception cref="OpusException" />
         /// <exception cref="ObjectDisposedException" />
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Encode(short[] input, int frame_size, byte[] output, int max_data_bytes)
+#else
         public unsafe int Encode(Span<short> input, int frame_size, Span<byte> output, int max_data_bytes)
+#endif
         {
             ThrowIfDisposed();
             fixed (short* inputPtr = input)
@@ -90,7 +98,11 @@ namespace OpusSharp.Core
         /// <returns>The length of the encoded packet (in bytes).</returns>
         /// <exception cref="OpusException" />
         /// <exception cref="ObjectDisposedException" />
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Encode(float[] input, int frame_size, byte[] output, int max_data_bytes)
+#else
         public unsafe int Encode(Span<float> input, int frame_size, Span<byte> output, int max_data_bytes)
+#endif
         {
             ThrowIfDisposed();
             fixed (float* inputPtr = input)
@@ -102,6 +114,7 @@ namespace OpusSharp.Core
             }
         }
 
+#if NETSTANDARD2_1_OR_GREATER
         /// <summary>
         /// Encodes a pcm frame.
         /// </summary>
@@ -137,6 +150,8 @@ namespace OpusSharp.Core
         /// <exception cref="OpusException" />
         /// <exception cref="ObjectDisposedException" />
         public int Encode(float[] input, int frame_size, byte[] output, int max_data_bytes) => Encode(input.AsSpan(), frame_size, output.AsSpan(), max_data_bytes);
+#endif
+
 
         /// <summary>
         /// Performs a ctl request.
@@ -169,7 +184,7 @@ namespace OpusSharp.Core
         /// <returns>The result code of the request. See <see cref="OpusErrorCodes"/>.</returns>
         /// <exception cref="OpusException" />
         /// <exception cref="ObjectDisposedException" />
-        public unsafe int Ctl<T, T2>(EncoderCTL request, ref T value, ref T2 value2) 
+        public unsafe int Ctl<T, T2>(EncoderCTL request, ref T value, ref T2 value2)
             where T : unmanaged
             where T2 : unmanaged
         {

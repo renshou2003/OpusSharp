@@ -44,7 +44,11 @@ namespace OpusSharp.Core
         /// <param name="frame_size">Number of samples per channel of available space in pcm. If this is less than the maximum packet duration (120ms; 5760 for 48kHz), this function will not be capable of decoding some packets. In the case of PLC (data==NULL) or FEC (decode_fec=true), then frame_size needs to be exactly the duration of audio that is missing, otherwise the decoder will not be in the optimal state to decode the next incoming packet. For the PLC and FEC cases, frame_size must be a multiple of 2.5 ms.</param>
         /// <param name="decode_fec">Request that any in-band forward error correction data be decoded. If no such data is available, the frame is decoded as if it were lost.</param>
         /// <returns>Number of decoded samples or <see cref="OpusErrorCodes"/>.</returns>
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Decode(byte[] input, int length, byte[] output, int frame_size, bool decode_fec)
+#else
         public unsafe int Decode(Span<byte> input, int length, Span<byte> output, int frame_size, bool decode_fec)
+#endif
         {
             ThrowIfDisposed();
 
@@ -66,7 +70,11 @@ namespace OpusSharp.Core
         /// <param name="frame_size">Number of samples per channel of available space in pcm. If this is less than the maximum packet duration (120ms; 5760 for 48kHz), this function will not be capable of decoding some packets. In the case of PLC (data==NULL) or FEC (decode_fec=true), then frame_size needs to be exactly the duration of audio that is missing, otherwise the decoder will not be in the optimal state to decode the next incoming packet. For the PLC and FEC cases, frame_size must be a multiple of 2.5 ms.</param>
         /// <param name="decode_fec">Request that any in-band forward error correction data be decoded. If no such data is available, the frame is decoded as if it were lost.</param>
         /// <returns>Number of decoded samples or <see cref="OpusErrorCodes"/>.</returns>
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Decode(byte[] input, int length, short[] output, int frame_size, bool decode_fec)
+#else
         public unsafe int Decode(Span<byte> input, int length, Span<short> output, int frame_size, bool decode_fec)
+#endif
         {
             ThrowIfDisposed();
 
@@ -88,7 +96,11 @@ namespace OpusSharp.Core
         /// <param name="frame_size">Number of samples per channel of available space in pcm. If this is less than the maximum packet duration (120ms; 5760 for 48kHz), this function will not be capable of decoding some packets. In the case of PLC (data==NULL) or FEC (decode_fec=true), then frame_size needs to be exactly the duration of audio that is missing, otherwise the decoder will not be in the optimal state to decode the next incoming packet. For the PLC and FEC cases, frame_size must be a multiple of 2.5 ms.</param>
         /// <param name="decode_fec">Request that any in-band forward error correction data be decoded. If no such data is available, the frame is decoded as if it were lost.</param>
         /// <returns>Number of decoded samples or <see cref="OpusErrorCodes"/>.</returns>
+#if NETSTANDARD2_0 || NET462_OR_GREATER
+        public unsafe int Decode(byte[] input, int length, float[] output, int frame_size, bool decode_fec)
+#else
         public unsafe int Decode(Span<byte> input, int length, Span<float> output, int frame_size, bool decode_fec)
+#endif
         {
             ThrowIfDisposed();
 
@@ -101,6 +113,7 @@ namespace OpusSharp.Core
             }
         }
 
+#if NETSTANDARD2_1_OR_GREATER
         /// <summary>
         /// Decodes an opus encoded frame.
         /// </summary>
@@ -133,6 +146,7 @@ namespace OpusSharp.Core
         /// <param name="decode_fec">Request that any in-band forward error correction data be decoded. If no such data is available, the frame is decoded as if it were lost.</param>
         /// <returns>Number of decoded samples or <see cref="OpusErrorCodes"/>.</returns>
         public unsafe int Decode(byte[]? input, int length, float[] output, int frame_size, bool decode_fec) => Decode(input.AsSpan(), length, output.AsSpan(), frame_size, decode_fec);
+#endif
 
         /// <summary>
         /// Performs a ctl request.
