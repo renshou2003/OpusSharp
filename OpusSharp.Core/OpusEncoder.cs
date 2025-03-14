@@ -15,6 +15,41 @@ namespace OpusSharp.Core
         private bool _disposed;
 
         /// <summary>
+        /// Gets the input sampling rate of the encoder.
+        /// </summary>
+        public int InputSamplingRate { get; private set; }
+
+        /// <summary>
+        /// Gets the number of channels of the encoder.
+        /// </summary>
+        public int InputChannels { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the size of memory allocated for reading encoded data.
+        /// 4000 is recommended.
+        /// </summary>
+        public int MaxDataBytes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the bitrate setting of the encoding.
+        /// </summary>
+        public int Bitrate
+        {
+            get
+            {
+                ThrowIfDisposed();
+                int bitrate = 0;
+                Ctl(EncoderCTL.OPUS_GET_BITRATE, ref bitrate);
+                return bitrate;
+            }
+            set
+            {
+                ThrowIfDisposed();
+                Ctl(EncoderCTL.OPUS_SET_BITRATE, ref value);
+            }
+        }
+
+        /// <summary>
         /// Creates a new opus encoder.
         /// </summary>
         /// <param name="sample_rate">The sample rate, this must be one of 8000, 12000, 16000, 24000, or 48000.</param>
@@ -26,6 +61,9 @@ namespace OpusSharp.Core
             int error = 0;
             _handler = NativeOpus.opus_encoder_create(sample_rate, channels, (int)application, &error);
             CheckError(error);
+            MaxDataBytes = 4000;
+            InputChannels = channels;
+            InputSamplingRate = sample_rate;
         }
 
         /// <summary>
@@ -231,6 +269,49 @@ namespace OpusSharp.Core
                 CheckError(result);
                 return result;
             }
+        }
+
+        /// <summary>
+        /// Produces Opus encoded audio from PCM samples.
+        /// </summary>
+        /// <param name="inputPcmSamples">PCM samples to encode.</param>
+        /// <param name="sampleLength">How many bytes to encode.</param>
+        /// <param name="encodedLength">Set to length of encoded audio.</param>
+        /// <returns>Opus encoded audio buffer.</returns>
+        public unsafe byte[] Encode(byte[] inputPcmSamples, int sampleLength, out int encodedLength)
+        {
+            ThrowIfDisposed();
+            int frames = FrameCount(inputPcmSamples);
+            byte[] encoded = new byte[MaxDataBytes];
+            int length = Encode(inputPcmSamples, frames, encoded, sampleLength);
+            encodedLength = length;
+            CheckError(length);
+            return encoded;
+        }
+
+        /// <summary>
+        /// Determines the number of frames in the PCM samples.
+        /// </summary>
+        /// <param name="pcmSamples"></param>
+        /// <returns></returns>
+        public int FrameCount(byte[] pcmSamples)
+        {
+            //  seems like bitrate should be required
+            int bitrate = 16;
+            int bytesPerSample = (bitrate / 8) * InputChannels;
+            return pcmSamples.Length / bytesPerSample;
+        }
+
+        /// <summary>
+        /// Helper method to determine how many bytes are required for encoding to work.
+        /// </summary>
+        /// <param name="frameCount">Target frame size.</param>
+        /// <returns></returns>
+        public int FrameByteCount(int frameCount)
+        {
+            int bitrate = 16;
+            int bytesPerSample = (bitrate / 8) * InputChannels;
+            return frameCount * bytesPerSample;
         }
 
         /// <inheritdoc/>

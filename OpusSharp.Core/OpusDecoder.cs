@@ -1,5 +1,6 @@
 ﻿using OpusSharp.Core.SafeHandlers;
 using System;
+using System.Text;
 
 namespace OpusSharp.Core
 {
@@ -15,6 +16,22 @@ namespace OpusSharp.Core
         private bool _disposed;
 
         /// <summary>
+        /// Gets the output sampling rate of the decoder.
+        /// </summary>
+        public int OutputSamplingRate { get; }
+
+        /// <summary>
+        /// Gets the number of channels of the decoder.
+        /// </summary>
+        public int OutputChannels { get; }
+
+        /// <summary>
+        /// Gets or sets the size of memory allocated for reading encoded data.
+        /// 4000 is recommended.
+        /// </summary>
+        public int MaxDataBytes { get; set; }
+
+        /// <summary>
         /// Creates a new opus decoder.
         /// </summary>
         /// <param name="sample_rate">The sample rate, this must be one of 8000, 12000, 16000, 24000, or 48000.</param>
@@ -25,6 +42,9 @@ namespace OpusSharp.Core
             int error = 0;
             _handler = NativeOpus.opus_decoder_create(sample_rate, channels, &error);
             CheckError(error);
+            MaxDataBytes = 4000;
+            OutputChannels = channels;
+            OutputSamplingRate = sample_rate;
         }
 
         /// <summary>
@@ -201,6 +221,51 @@ namespace OpusSharp.Core
                 CheckError(result);
                 return result;
             }
+        }
+
+        /// <summary>
+        /// Produces PCM samples from Opus encoded data.
+        /// </summary>
+        /// <param name="inputOpusData">Opus encoded data to decode, null for dropped packet.</param>
+        /// <param name="dataLength">Length of data to decode.</param>
+        /// <param name="decodedLength">Set to the length of the decoded sample data.</param>
+        /// <returns>PCM audio samples.</returns>
+        public byte[] Decode(byte[] inputOpusData, int dataLength, out int decodedLength)
+        {
+            return Decode(inputOpusData, dataLength, out decodedLength, false);
+        }
+
+        /// <summary>
+        /// Produces PCM samples from Opus encoded data.
+        /// </summary>
+        /// <param name="inputOpusData">Opus encoded data to decode, null for dropped packet.</param>
+        /// <param name="dataLength">Length of data to decode.</param>
+        /// <param name="decodedLength">Set to the length of the decoded sample data.</param>
+        /// <param name="decode_fec">Request that any in-band forward error correction data be decoded. If no such data is available, the frame is decoded as if it were lost.</param>
+        /// <returns>PCM audio samples.</returns>
+        public unsafe byte[] Decode(byte[] inputOpusData, int dataLength, out int decodedLength, bool decode_fec)
+        {
+            ThrowIfDisposed();
+
+            byte[] decoded = new byte[MaxDataBytes];
+            int frameCount = FrameCount(MaxDataBytes);
+            int length = Decode(inputOpusData, dataLength, decoded, frameCount, false);
+            decodedLength = length * 2;
+            CheckError(length);
+            return decoded;
+        }
+
+        /// <summary>
+        /// Determines the number of frames that can fit into a buffer of the given size.
+        /// </summary>
+        /// <param name="bufferSize"></param>
+        /// <returns></returns>
+        public int FrameCount(int bufferSize)
+        {
+            //  seems like bitrate should be required
+            int bitrate = 16;
+            int bytesPerSample = (bitrate / 8) * OutputChannels;
+            return bufferSize / bytesPerSample;
         }
 
         /// <inheritdoc/>
